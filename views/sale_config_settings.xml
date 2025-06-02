@@ -1,6 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+# -*- coding: utf-8 -*-
+# Copyright 2025 j.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# Date: 2025-06-02
+# Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+
+-->
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Copyright 2018 ACSONE SA/NV
-     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+
 <odoo>
     <record model="ir.ui.view" id="sale_config_settings_form_view">
         <field name="name">res.config.settings.form (in sale_blanket_order)</field>

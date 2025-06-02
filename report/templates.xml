@@ -1,3 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+# -*- coding: utf-8 -*-
+# Copyright 2025 j.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# Date: 2025-06-02
+# Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+
+-->
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <template id="report_blanketorder_document">

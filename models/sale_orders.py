@@ -1,6 +1,10 @@
-# Copyright 2018 ACSONE SA/NV
-# Copyright 2019 Eficent and IT Consulting Services, S.L.
+# -*- coding: utf-8 -*-
+# Copyright 2025 j.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# Date: 2025-06-02
+# Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+
+
 from datetime import date, timedelta
 
 from odoo import _, api, fields, models
