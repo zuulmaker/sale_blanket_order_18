@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+# -*- coding: utf-8 -*-
+# Copyright 2025 j.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# Date: 2025-06-03
+# Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+Sale Blanket Order Sequences - Robuste Nummernkreise für Odoo 18.0
+==================================================================
+
+Fehlertolerante und idempotente Sequenz-Definitionen für Blanket Orders.
+
+Anwendungsbeispiele:
+- Eindeutige Blanket Order Nummern: BO18-00001, BO18-00002
+- Company-spezifische Nummerierung: BO18-COMP1-00001
+- Jährliche Zurücksetzung: BO24-00001, BO25-00001
+- Robuste Fallback-Nummern bei Sequenz-Ausfällen
+- Integration mit bestehenden ERP-Nummernsystemen
+-->
+
+<odoo>
+    <data noupdate="0">
+
+        <!-- ===================================================================== -->
+        <!-- HAUPT-SEQUENZ - Blanket Order Nummernkreis -->
+        <!-- ===================================================================== -->
+
+        <record id="sequence_sale_blanket_order" model="ir.sequence">
+            <field name="name">Sale Blanket Order</field>
+            <field name="code">sale.blanket.order</field>
+            
+            <!-- ✅ GEÄNDERT: 18.0 spezifisches Prefix -->
+            <field name="prefix">BO18-</field>
+            <field name="suffix"></field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            
+            <!-- ✅ NEU: Erweiterte 18.0 Optionen -->
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            
+            <!-- ✅ GEÄNDERT: Jährliche Zurücksetzung für bessere Organisation -->
+            <field name="use_date_range">True</field>
+            
+            <!-- ✅ NEU: Multi-Company Unterstützung -->
+            <field name="company_id" eval="False"/>  <!-- Für alle Companies verfügbar -->
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- DATUMS-BEREICHE - Für jährliche Sequenz-Zurücksetzung -->
+        <!-- ===================================================================== -->
+
+        <!-- 2025 Sequenz Range -->
+        <record id="sequence_sale_blanket_order_2025" model="ir.sequence.date_range">
+            <field name="sequence_id" ref="sequence_sale_blanket_order"/>
+            <field name="date_from">2025-01-01</field>
+            <field name="date_to">2025-12-31</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <!-- 2026 Sequenz Range (für Zukunfts-Planung) -->
+        <record id="sequence_sale_blanket_order_2026" model="ir.sequence.date_range">
+            <field name="sequence_id" ref="sequence_sale_blanket_order"/>
+            <field name="date_from">2026-01-01</field>
+            <field name="date_to">2026-12-31</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- COMPANY-SPEZIFISCHE SEQUENZEN - Für Multi-Company Setups -->
+        <!-- ===================================================================== -->
+
+        <!-- Template für Company-spezifische Sequenz -->
+        <record id="sequence_sale_blanket_order_company_template" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Company Specific)</field>
+            <field name="code">sale.blanket.order.company</field>
+            <field name="prefix">BO18-%(company_code)s-</field>
+            <field name="suffix"></field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">False</field>  <!-- Aktiviert wenn benötigt -->
+            <field name="use_date_range">True</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- BACKUP-SEQUENZ - Fallback bei Hauptsequenz-Problemen -->
+        <!-- ===================================================================== -->
+
+        <record id="sequence_sale_blanket_order_backup" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Backup)</field>
+            <field name="code">sale.blanket.order.backup</field>
+            <field name="prefix">BO18-BAK-</field>
+            <field name="suffix">-%(day)s%(month)s</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <!-- ✅ NEU: Für Notfälle immer verfügbar -->
+            <field name="use_date_range">False</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- DRAFT-SEQUENZ - Für Draft-Blanket Orders (Optional) -->
+        <!-- ===================================================================== -->
+
+        <record id="sequence_sale_blanket_order_draft" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Draft)</field>
+            <field name="code">sale.blanket.order.draft</field>
+            <field name="prefix">DRAFT-BO-</field>
+            <field name="suffix"></field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="use_date_range">False</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- WIZARD-SEQUENZ - Für Wizard-Batch Operationen -->
+        <!-- ===================================================================== -->
+
+        <record id="sequence_sale_blanket_order_wizard_batch" model="ir.sequence">
+            <field name="name">Blanket Order Wizard Batch</field>
+            <field name="code">sale.blanket.order.wizard.batch</field>
+            <field name="prefix">BATCH-</field>
+            <field name="suffix">-%(year)s%(month)s%(day)s</field>
+            <field name="padding">3</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="use_date_range">False</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- ERWEITERTE SEQUENZ-OPTIONEN - 18.0 Features -->
+        <!-- ===================================================================== -->
+
+        <!-- ✅ NEU: Import/Export-spezifische Sequenz -->
+        <record id="sequence_sale_blanket_order_import" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Import)</field>
+            <field name="code">sale.blanket.order.import</field>
+            <field name="prefix">IMP-BO-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">5</field>
+            <field name="number_next">1000</field>  <!-- Startet bei 1000 für Unterscheidung -->
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="use_date_range">True</field>
+        </record>
+
+        <!-- ✅ NEU: API-Integration Sequenz -->
+        <record id="sequence_sale_blanket_order_api" model="ir.sequence">
+            <field name="name">Sale Blanket Order (API)</field>
+            <field name="code">sale.blanket.order.api</field>
+            <field name="prefix">API-BO-</field>
+            <field name="suffix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">100000</field>  <!-- Startet bei 100000 für API-Integration -->
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="use_date_range">False</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- SEQUENZ-REGELN UND AUTOMATISIERUNG -->
+        <!-- ===================================================================== -->
+
+        <!-- ✅ NEU: Automated Action für Sequenz-Monitoring -->
+        <record id="automated_action_sequence_monitoring" model="base.automation">
+            <field name="name">Blanket Order Sequence Monitoring</field>
+            <field name="model_id" ref="model_sale_blanket_order"/>
+            <field name="state">code</field>
+            <field name="trigger">on_write</field>
+            <field name="filter_domain">[('name', '=', 'Draft')]</field>
+            <field name="code">
+# ✅ ROBUST: Überwache Sequenz-Probleme und verwende Fallback
+try:
+    for record in records:
+        if record.name == 'Draft' and record.confirmed:
+            # Versuche Haupt-Sequenz
+            sequence = env['ir.sequence'].search([('code', '=', 'sale.blanket.order')], limit=1)
+            if sequence:
+                new_name = sequence.next_by_id()
+                if new_name:
+                    record.name = new_name
+                    log(f"Sequence generated: {new_name}")
+                else:
+                    # Fallback zur Backup-Sequenz
+                    backup_sequence = env['ir.sequence'].search([('code', '=', 'sale.blanket.order.backup')], limit=1)
+                    if backup_sequence:
+                        backup_name = backup_sequence.next_by_id()
+                        record.name = backup_name
+                        log(f"Backup sequence used: {backup_name}")
+            else:
+                log("ERROR: No sequence found for sale.blanket.order")
+except Exception as e:
+    log(f"Sequence automation error: {e}")
+</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- SEQUENZ-KONFIGURATION FÜR VERSCHIEDENE REGIONEN -->
+        <!-- ===================================================================== -->
+
+        <!-- Deutschland-spezifische Sequenz -->
+        <record id="sequence_sale_blanket_order_de" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Germany)</field>
+            <field name="code">sale.blanket.order.de</field>
+            <field name="prefix">DE-BO-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">False</field>  <!-- Aktiviert bei Bedarf -->
+            <field name="use_date_range">True</field>
+        </record>
+
+        <!-- EU-weite Sequenz -->
+        <record id="sequence_sale_blanket_order_eu" model="ir.sequence">
+            <field name="name">Sale Blanket Order (EU)</field>
+            <field name="code">sale.blanket.order.eu</field>
+            <field name="prefix">EU-BO-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">False</field>
+            <field name="use_date_range">True</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- MIGRATION-SEQUENZEN - Für 17.0 zu 18.0 Migration -->
+        <!-- ===================================================================== -->
+
+        <!-- Migration-spezifische Sequenz für Datenübernahme -->
+        <record id="sequence_sale_blanket_order_migration" model="ir.sequence">
+            <field name="name">Sale Blanket Order (Migration from 17.0)</field>
+            <field name="code">sale.blanket.order.migration</field>
+            <field name="prefix">MIG17-BO-</field>
+            <field name="suffix">-18</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">False</field>  <!-- Nur während Migration aktiv -->
+            <field name="use_date_range">False</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- NOTES UND DOKUMENTATION -->
+        <!-- ===================================================================== -->
+        
+        <!--
+        SEQUENZ-VERWENDUNG GUIDE:
+        
+        1. HAUPT-SEQUENZ (sequence_sale_blanket_order):
+           - Standard für alle neuen Blanket Orders
+           - Format: BO18-00001, BO18-00002, etc.
+           - Jährliche Zurücksetzung aktiviert
+        
+        2. BACKUP-SEQUENZ (sequence_sale_blanket_order_backup):
+           - Automatischer Fallback bei Hauptsequenz-Problemen
+           - Format: BO18-BAK-0001-0306 (mit Tag/Monat)
+           - Immer verfügbar, keine Datums-Bereiche
+        
+        3. COMPANY-SPEZIFISCH (sequence_sale_blanket_order_company_template):
+           - Für Multi-Company Setups
+           - Format: BO18-COMP1-00001
+           - Manuell aktivieren und konfigurieren
+        
+        4. DRAFT-SEQUENZ (sequence_sale_blanket_order_draft):
+           - Optional für Draft-Blanket Orders
+           - Format: DRAFT-BO-0001
+           - Verhindert Lücken in Haupt-Sequenz
+        
+        5. SPEZIELL:
+           - API-Integration: API-BO-100001 (startet bei 100000)
+           - Import: IMP-BO-1000-2025
+           - Wizard-Batches: BATCH-001-20250603
+           - Migration: MIG17-BO-00001-18
+        
+        ANWENDUNGSBEISPIELE:
+        
+        # Python Code für robuste Sequenz-Verwendung:
+        def get_next_blanket_order_number(self):
+            try:
+                # Versuche Haupt-Sequenz
+                sequence = self.env['ir.sequence'].search([
+                    ('code', '=', 'sale.blanket.order'),
+                    ('active', '=', True)
+                ], limit=1)
+                
+                if sequence:
+                    number = sequence.next_by_id()
+                    if number:
+                        return number
+                
+                # Fallback zur Backup-Sequenz
+                backup_sequence = self.env['ir.sequence'].search([
+                    ('code', '=', 'sale.blanket.order.backup'),
+                    ('active', '=', True)
+                ], limit=1)
+                
+                if backup_sequence:
+                    return backup_sequence.next_by_id()
+                    
+                # Letzter Fallback: Generiere manuelle Nummer
+                return f"BO18-MANUAL-{fields.Datetime.now().strftime('%Y%m%d%H%M%S')}"
+                
+            except Exception as e:
+                # Absoluter Notfall-Fallback
+                return f"BO18-ERROR-{self.id}"
+        
+        MIGRATION VON 17.0:
+        - Alte Sequenzen mit Prefix 'BO17-' bleiben erhalten
+        - Neue Sequenzen verwenden 'BO18-' Prefix
+        - Migration-Sequenz für Datenübernahme verfügbar
+        - Automatische Erkennung und Upgrade-Pfad
+        
+        PERFORMANCE-OPTIMIERUNG:
+        - Standard-Implementation für beste Performance
+        - No-Gap Modus nur wenn erforderlich
+        - Batch-Sequenzen für Wizard-Operationen
+        - Separate API-Sequenzen für externe Integration
+        
+        TROUBLESHOOTING:
+        - Backup-Sequenz immer verfügbar
+        - Automated Action überwacht Sequenz-Probleme
+        - Logging für alle Sequenz-Operationen
+        - Manuelle Fallback-Mechanismen
+        -->
+
+    </data>
+</odoo>

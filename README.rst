@@ -1,5 +1,5 @@
-# Copyright 2018 ACSONE SA/NV
 # Copyright 2025 Albrecht Zwick GmbH
+
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 ==============================================

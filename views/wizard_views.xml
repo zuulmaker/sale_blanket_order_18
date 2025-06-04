@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Sale Blanket Order Wizard Views - Robuste UI für Odoo 18.0
+==========================================================
+
+Fehlertolerante und benutzerfreundliche Wizard-Views für Sale Order Erstellung.
+
+Anwendungsbeispiele:
+- Wizard-gesteuerte SO-Erstellung aus Blanket Orders
+- Bulk-Operationen über benutzerfreundliche Interfaces
+- Validierung und Preview vor tatsächlicher Erstellung
+- Mobile-freundliche Bedienung für Field-Workers
+-->
+
+<odoo>
+    <data>
+
+        <!-- ===================================================================== -->
+        <!-- SALE BLANKET ORDER WIZARD - Hauptwizard für SO-Erstellung -->
+        <!-- ===================================================================== -->
+
+        <record id="sale_blanket_order_wizard_form_view" model="ir.ui.view">
+            <field name="name">sale.blanket.order.wizard.form</field>
+            <field name="model">sale.blanket.order.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Create Sale Orders from Blanket Orders">
+                    
+                    <!-- ✅ GEÄNDERT: Progress Header für 18.0 -->
+                    <header>
+                        <button name="action_validate_setup" 
+                                type="object" 
+                                string="Validate Setup" 
+                                class="btn-secondary"
+                                help="Validate wizard configuration before processing"/>
+                        
+                        <button name="action_preview_lines" 
+                                type="object" 
+                                string="Preview Lines" 
+                                class="btn-secondary"
+                                help="Preview lines that will be processed"/>
+                        
+                        <button name="action_create_sale_orders" 
+                                type="object" 
+                                string="Create Sale Orders" 
+                                class="oe_highlight"
+                                attrs="{'invisible': [('state', 'in', ['in_progress', 'done'])]}"
+                                help="Create Sale Orders from selected Blanket Orders"/>
+                        
+                        <button name="action_view_created_orders" 
+                                type="object" 
+                                string="View Created Orders" 
+                                class="btn-primary"
+                                attrs="{'invisible': [('state', '!=', 'done')]}"
+                                help="View the created Sale Orders"/>
+                        
+                        <button name="action_reset_wizard" 
+                                type="object" 
+                                string="Reset" 
+                                class="btn-secondary"
+                                attrs="{'invisible': [('state', '=', 'draft')]}"
+                                help="Reset wizard to start over"/>
+                        
+                        <!-- ✅ NEU: State-Bar für bessere UX -->
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="draft,in_progress,done"/>
+                    </header>
+
+                    <!-- ✅ GEÄNDERT: Alert-Nachrichten für verschiedene States -->
+                    <div class="alert alert-info" role="alert" 
+                         attrs="{'invisible': [('state', '!=', 'draft')]}">
+                        <strong><i class="fa fa-info-circle"/> Setup Required:</strong>
+                        Configure your wizard settings below and validate before creating Sale Orders.
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert" 
+                         attrs="{'invisible': [('state', '!=', 'in_progress')]}">
+                        <strong><i class="fa fa-spinner fa-spin"/> Processing:</strong>
+                        Sale Order creation is in progress. Please wait...
+                    </div>
+                    
+                    <div class="alert alert-success" role="alert" 
+                         attrs="{'invisible': [('state', '!=', 'done')]}">
+                        <strong><i class="fa fa-check-circle"/> Completed:</strong>
+                        Sale Order creation completed successfully!
+                    </div>
+                    
+                    <div class="alert alert-danger" role="alert" 
+                         attrs="{'invisible': [('state', '!=', 'error')]}">
+                        <strong><i class="fa fa-exclamation-triangle"/> Error:</strong>
+                        An error occurred during processing. Check the details below.
+                    </div>
+
+                    <sheet>
+                        
+                        <!-- ✅ GEÄNDERT: Moderne Card-Layout für bessere Organisation -->
+                        <div class="oe_title">
+                            <h1>
+                                <field name="id" invisible="1"/>
+                                Sale Order Creation Wizard
+                            </h1>
+                            <p class="text-muted">
+                                Create Sale Orders from your open Blanket Orders with advanced configuration options.
+                            </p>
+                        </div>
+
+                        <!-- ✅ GEÄNDERT: Erweiterte Konfiguration in Tabs -->
+                        <notebook>
+                            
+                            <!-- Configuration Tab -->
+                            <page string="Configuration" name="config">
+                                <group string="Source Selection">
+                                    <group>
+                                        <field name="partner_id" 
+                                               domain="['|', ('is_company', '=', True), ('parent_id', '=', False)]"
+                                               context="{'res_partner_search_mode': 'customer'}"
+                                               help="Leave empty to process all partners"/>
+                                        
+                                        <field name="blanket_order_ids" 
+                                               widget="many2many_tags"
+                                               domain="[('state', '=', 'open'), ('validity_date', '>', context_today())]"
+                                               help="Select specific Blanket Orders to process"/>
+                                    </group>
+                                    
+                                    <!-- ✅ NEU: Quick Selection Buttons -->
+                                    <group string="Quick Selection">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <button type="object" 
+                                                        name="action_select_all_open" 
+                                                        string="Select All Open"
+                                                        class="btn btn-link"
+                                                        help="Select all open Blanket Orders"/>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="object" 
+                                                        name="action_select_expiring_soon" 
+                                                        string="Expiring Soon"
+                                                        class="btn btn-link"
+                                                        help="Select Blanket Orders expiring within 30 days"/>
+                                            </div>
+                                        </div>
+                                    </group>
+                                </group>
+
+                                <group string="Creation Options">
+                                    <group>
+                                        <field name="creation_mode" 
+                                               widget="radio"
+                                               help="How to group the created Sale Orders"/>
+                                        
+                                        <field name="line_selection_mode" 
+                                               help="Which lines and quantities to include"/>
+                                        
+                                        <field name="auto_confirm" 
+                                               help="Automatically confirm created Sale Orders"/>
+                                    </group>
+                                    
+                                    <group>
+                                        <field name="validate_quantities" 
+                                               help="Perform strict quantity validation"/>
+                                        
+                                        <field name="batch_size" 
+                                               attrs="{'invisible': [('line_selection_mode', '!=', 'custom')]}"
+                                               help="Number of lines to process per batch"/>
+                                    </group>
+                                </group>
+
+                                <!-- ✅ NEU: Advanced Options (Collapsible) -->
+                                <group string="Sale Order Details" name="so_details">
+                                    <group>
+                                        <field name="commitment_date" 
+                                               help="Delivery commitment date for created orders"/>
+                                        
+                                        <field name="client_order_ref" 
+                                               help="Customer reference for created orders"/>
+                                    </group>
+                                    
+                                    <group>
+                                        <field name="note" 
+                                               placeholder="Additional notes for the Sale Orders..."
+                                               help="Additional notes to include in created orders"/>
+                                    </group>
+                                </group>
+                            </page>
+
+                            <!-- Preview Tab -->
+                            <page string="Preview" name="preview" 
+                                  attrs="{'invisible': [('state', '=', 'draft')]}">
+                                
+                                <!-- ✅ NEU: Live Preview Statistiken -->
+                                <group string="Processing Summary" 
+                                       attrs="{'invisible': [('state', '=', 'draft')]}">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <h3 class="text-primary">
+                                                    <field name="blanket_order_count" readonly="1"/>
+                                                </h3>
+                                                <p class="text-muted">Blanket Orders</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <h3 class="text-success">
+                                                    <span>TBD</span>
+                                                </h3>
+                                                <p class="text-muted">Lines to Process</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <h3 class="text-info">
+                                                    <span>TBD</span>
+                                                </h3>
+                                                <p class="text-muted">Partners Affected</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <h3 class="text-warning">
+                                                    <span>TBD</span>
+                                                </h3>
+                                                <p class="text-muted">Estimated Orders</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </group>
+
+                                <!-- Result Message Display -->
+                                <group string="Processing Details" 
+                                       attrs="{'invisible': [('result_message', '=', False)]}">
+                                    <field name="result_message" 
+                                           nolabel="1" 
+                                           readonly="1" 
+                                           widget="html"/>
+                                </group>
+                            </page>
+
+                            <!-- Results Tab -->
+                            <page string="Results" name="results" 
+                                  attrs="{'invisible': [('state', '!=', 'done')]}">
+                                
+                                <group string="Created Sale Orders">
+                                    <field name="created_sale_order_ids" 
+                                           nolabel="1" 
+                                           readonly="1">
+                                        <tree string="Created Sale Orders" 
+                                              decoration-success="state in ['sale', 'done']"
+                                              decoration-info="state == 'draft'">
+                                            <field name="name"/>
+                                            <field name="partner_id"/>
+                                            <field name="date_order"/>
+                                            <field name="amount_total" sum="Total Amount"/>
+                                            <field name="state" widget="badge"/>
+                                            <field name="currency_id" invisible="1"/>
+                                        </tree>
+                                    </field>
+                                </group>
+
+                                <!-- ✅ NEU: Quick Actions für Results -->
+                                <group string="Quick Actions">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <button type="object" 
+                                                    name="action_view_created_orders" 
+                                                    string="View All Orders"
+                                                    class="btn btn-primary btn-block"
+                                                    help="Open all created Sale Orders"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="object" 
+                                                    name="action_print_orders" 
+                                                    string="Print Orders"
+                                                    class="btn btn-secondary btn-block"
+                                                    help="Print all created Sale Orders"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="object" 
+                                                    name="action_email_orders" 
+                                                    string="Email Orders"
+                                                    class="btn btn-secondary btn-block"
+                                                    help="Email orders to customers"/>
+                                        </div>
+                                    </div>
+                                </group>
+                            </page>
+
+                            <!-- ✅ NEU: Advanced Tab für Power-User -->
+                            <page string="Advanced" name="advanced" 
+                                  groups="base.group_no_one">
+                                
+                                <group string="Technical Settings">
+                                    <field name="batch_size"/>
+                                    <field name="validate_quantities"/>
+                                </group>
+                                
+                                <group string="Debug Information" 
+                                       attrs="{'invisible': [('state', '=', 'draft')]}">
+                                    <div class="alert alert-info">
+                                        <h4>Wizard Summary</h4>
+                                        <ul>
+                                            <li>State: <field name="state" readonly="1" nolabel="1"/></li>
+                                            <li>Creation Mode: <field name="creation_mode" readonly="1" nolabel="1"/></li>
+                                            <li>Line Selection: <field name="line_selection_mode" readonly="1" nolabel="1"/></li>
+                                            <li>Auto Confirm: <field name="auto_confirm" readonly="1" nolabel="1"/></li>
+                                        </ul>
+                                    </div>
+                                </group>
+                            </page>
+                            
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- DETAILED LINE WIZARD - Für detaillierte Line-Auswahl -->
+        <!-- ===================================================================== -->
+
+        <record id="sale_blanket_order_line_wizard_form_view" model="ir.ui.view">
+            <field name="name">sale.blanket.order.line.wizard.form</field>
+            <field name="model">sale.blanket.order.line.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Blanket Order Line Selection">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="blanket_line_id" 
+                                       domain="[('order_id.state', '=', 'open'), ('remaining_uom_qty', '>', 0)]"
+                                       context="{'from_sale_order': True}"/>
+                                <field name="selected" widget="boolean_toggle"/>
+                                <field name="quantity_to_order" 
+                                       attrs="{'required': [('selected', '=', True)]}"/>
+                            </group>
+                            
+                            <group>
+                                <field name="max_quantity" readonly="1"/>
+                                <field name="note" placeholder="Additional notes for this line..."/>
+                            </group>
+                        </group>
+
+                        <!-- ✅ NEU: Progress Bar für verfügbare Menge -->
+                        <group string="Quantity Information" 
+                               attrs="{'invisible': [('blanket_line_id', '=', False)]}">
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-success" 
+                                     role="progressbar" 
+                                     t-attf-style="width: #{(quantity_to_order / max_quantity * 100) if max_quantity else 0}%">
+                                    <span class="progress-text">
+                                        <field name="quantity_to_order" readonly="1"/> / 
+                                        <field name="max_quantity" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Selected quantity vs. maximum available quantity
+                            </small>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- WIZARD ACTIONS - Action-Definitionen für Wizard-Aufrufe -->
+        <!-- ===================================================================== -->
+
+        <!-- Haupt-Wizard Action -->
+        <record id="sale_blanket_order_wizard_action" model="ir.actions.act_window">
+            <field name="name">Create Sale Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{
+                'default_creation_mode': 'single',
+                'default_line_selection_mode': 'remaining',
+                'default_validate_quantities': True,
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create Sale Orders from Blanket Orders!
+                </p>
+                <p>
+                    This wizard helps you create Sale Orders from your open Blanket Orders
+                    with advanced configuration options and validation.
+                </p>
+            </field>
+        </record>
+
+        <!-- ✅ NEU: Context-spezifische Wizard Actions -->
+        
+        <!-- Quick Action für einzelne Blanket Order -->
+        <record id="sale_blanket_order_wizard_single_action" model="ir.actions.act_window">
+            <field name="name">Create Sale Order</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{
+                'default_blanket_order_ids': [active_id],
+                'default_creation_mode': 'single',
+                'default_line_selection_mode': 'remaining',
+                'default_auto_confirm': False,
+            }</field>
+        </record>
+
+        <!-- Bulk Action für mehrere Blanket Orders -->
+        <record id="sale_blanket_order_wizard_bulk_action" model="ir.actions.act_window">
+            <field name="name">Bulk Create Sale Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{
+                'default_blanket_order_ids': active_ids,
+                'default_creation_mode': 'multiple',
+                'default_line_selection_mode': 'remaining',
+                'default_validate_quantities': True,
+            }</field>
+        </record>
+
+        <!-- Partner-spezifischer Wizard -->
+        <record id="sale_blanket_order_wizard_partner_action" model="ir.actions.act_window">
+            <field name="name">Create Sale Orders for Partner</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{
+                'default_partner_id': active_id,
+                'default_creation_mode': 'single',
+                'default_line_selection_mode': 'remaining',
+            }</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- MENU INTEGRATION - Wizard-Menüs -->
+        <!-- ===================================================================== -->
+
+        <!-- Wizard-Menü unter Sales -->
+        <menuitem id="sale_blanket_order_wizard_menu" 
+                  name="Create Sale Orders" 
+                  parent="sale.sale_order_menu" 
+                  action="sale_blanket_order_wizard_action" 
+                  sequence="20"
+                  groups="sales_team.group_sale_salesman"/>
+
+        <!-- ✅ NEU: Schnellzugriff im Apps-Menü -->
+        <menuitem id="sale_blanket_order_tools_menu" 
+                  name="Blanket Order Tools" 
+                  parent="sale.menu_sale_config" 
+                  sequence="10"/>
+        
+        <menuitem id="sale_blanket_order_wizard_tools_menu" 
+                  name="SO Creation Wizard" 
+                  parent="sale_blanket_order_tools_menu" 
+                  action="sale_blanket_order_wizard_action" 
+                  sequence="10"/>
+
+    </data>
+</odoo>
