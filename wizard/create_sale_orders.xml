@@ -8,31 +8,40 @@
 
 -->
 <odoo>
+
     <record id="view_create_sale_order" model="ir.ui.view">
-        <field name="name">Create Sale Order</field>
+        <field name="name" aria-label="Reference">Create Sale Order</field>
         <field name="model">sale.blanket.order.wizard</field>
         <field name="arch" type="xml">
-            <form string="Create Sale Order">
+            <form string="Create Sale Order" class="o_responsive_form">
+                <div class="oe_title mb16" invisible="blanket_order_id == False">
+                    <h1>
+                        <field name="blanket_order_id" readonly="1" nolabel="1"/>
+                    </h1>
+                </div>
                 <group>
-                    <field name="line_ids" nolabel="1" colspan="2">
-                        <tree create="false" editable="bottom">
+                    <field name="line_ids" nolabel="1" colspan="2" widget="one2many">
+                        <tree string="Order Lines" create="false" editable="bottom" decoration-danger="qty &gt; remaining_uom_qty"
+                              decoration-warning="qty == 0" sample="1" multi_edit="1">
                             <field
                                 name="blanket_line_id"
                                 force_save="1"
                                 invisible="1"
+                                required="1"
                             />
                             <field name="product_id" />
-                            <field name="partner_id" />
+                            <field name="partner_id"  aria-label="Customer"/>
                             <field name="date_schedule" />
-                            <field name="price_unit" />
-                            <field name="remaining_uom_qty" />
+                            <field name="price_unit" readonly="1" widget="monetary" options="{'currency_field':'currency_id'}"/>
+                            <field name="remaining_uom_qty" string="Remaining Qty"/>
                             <field name="product_uom" groups="uom.group_uom" />
-                            <field name="qty" />
+                            <field name="qty" string="Qty to Order" required="1" readonly="remaining_uom_qty == 0"/>
                             <field
                                 name="analytic_distribution"
                                 widget="analytic_distribution"
                                 optional="hide"
                                 groups="analytic.group_analytic_accounting"
+                                readonly="product_id == False"
                                 options="{
                                          'product_field': 'product_id',
                                          'business_domain': 'sale_order'
@@ -41,27 +50,50 @@
                         </tree>
                     </field>
                 </group>
+
+                 <div class="alert alert-info" role="alert"
+                     invisible="('line_ids', '!=', [])">
+                    <strong>Info:</strong> No blanket order lines available for conversion.
+                    Please check that the blanket order has open lines with remaining quantities.
+                </div>
+
                 <footer>
-                    <button
-                        name="create_sale_order"
-                        string="Create and View Order"
-                        type="object"
-                        class="btn-primary"
-                    />
-                    <button string="Cancel" class="btn-default" special="cancel" />
+                    <!-- Fehlertolerant: Button nur aktivieren wenn Zeilen vorhanden -->
+                    <button name="create_sale_order"
+                            string="Create and View Orders"
+                            type="object"
+                            class="btn-primary"
+                            invisible="('line_ids', '=', [])" help="Create a new record"/>
+
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel" help="Cancel this order"/>
                 </footer>
             </form>
         </field>
     </record>
+
     <record id="action_create_sale_order" model="ir.actions.act_window">
-        <field name="name">Create Sale Order</field>
+        <field name="name" aria-label="Reference">Create Sale Orders from Blanket Order</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">sale.blanket.order.wizard</field>
         <field name="view_mode">form</field>
+        <field name="view_id" ref="view_create_sale_order"/>
         <field name="target">new</field>
-        <field
-            name="binding_model_id"
-            ref="sale_blanket_order.model_sale_blanket_order_line"
-        />
+        <field name="binding_model_id" ref="sale_blanket_order.model_sale_blanket_order_line"/>
+        <field name="context">{'default_mode': 'from_blanket_lines'}</field>
     </record>
+
+    <!-- Fehlertolerant: Zusätzliche Action für Blanket Orders -->
+    <record id="action_create_sale_order_from_blanket" model="ir.actions.act_window">
+        <field name="name" aria-label="Reference">Create Sale Orders</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.blanket.order.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_create_sale_order"/>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="sale_blanket_order.model_sale_blanket_order"/>
+        <field name="context">{'default_mode': 'from_blanket_order'}</field>
+    </record>
+
 </odoo>

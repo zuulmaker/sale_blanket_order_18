@@ -6,41 +6,199 @@
 # Date: 2025-06-02
 # Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
 
+View-Erweiterungen für Sale Orders zur Integration mit Blanket Orders.
 -->
 <odoo>
-    <record id="view_order_form" model="ir.ui.view">
-        <field name="name">sale.order.from.blanket.form</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_order_form" />
-        <field name="arch" type="xml">
-            <field name="currency_id" position="after">
-                <field name="blanket_order_id" invisible="1" />
+
+        <record id="view_order_form_blanket_extension" model="ir.ui.view">
+            <field name="name">sale.order.form.blanket.extension</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//div[@name='button_box']" position="inside">
+
+                    <button type="object"
+                            name="action_view_blanket_orders"
+                            class="oe_stat_button"
+                            icon="fa-file-text-o"
+                            invisible="blanket_order_count == 0"
+                            help="View related Blanket Orders">
+                        <field name="blanket_order_count" widget="statinfo" string="Blanket Orders"/>
+                    </button>
+
+                </xpath>
+
+                <xpath expr="//field[@name='origin']" position="attributes">
+                    <attribute name="attrs">{'readonly': [('state', '!=', 'draft')]}</attribute>
+                    <attribute name="help">Reference to source document (e.g., Blanket Order)</attribute>
+                </xpath>
+
+                <xpath expr="//page[@name='other_information']" position="inside">
+                    <group name="blanket_info" string="Blanket Order Information"
+                           invisible="origin == False">
+                        <field name="origin" readonly="1" string="Source Blanket Order"/>
+                    </group>
+                </xpath>
+
             </field>
-            <xpath
-                expr="//field[@name='order_line']//tree/field[@name='product_id']"
-                position="after"
-            >
-                <field
-                    name="blanket_order_line"
-                    context="{'from_sale_order': True}"
-                    column_invisible="not parent.blanket_order_id"
-                />
-            </xpath>
-            <xpath expr="//field[@name='order_line']" position="attributes">
-                <attribute name="context">{'from_sale_order': True}</attribute>
-            </xpath>
-        </field>
-    </record>
-    <record id="view_order_form_disable_adding_lines" model="ir.ui.view">
-        <field name="name">sale.order.from.blanket.form - disable adding lines</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_order_form" />
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='order_line']//tree" position="attributes">
-                <t groups="sale_blanket_order.blanket_orders_disable_adding_lines">
-                    <attribute name="create">blanket_order_id==False</attribute>
-                </t>
-            </xpath>
-        </field>
-    </record>
+        </record>
+        <record id="view_order_line_form_blanket_extension" model="ir.ui.view">
+            <field name="name" aria-label="Reference">sale.order.line.form.blanket.extension</field>
+            <field name="model">sale.order.line</field>
+            <field name="inherit_id" ref="sale.view_order_line_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//group[@name='sale_line_qty']" position="after">
+                    <group name="blanket_info" string="Blanket Order Information"
+                           invisible="blanket_order_line == False">
+                        <field name="blanket_order_line" readonly="1"/>
+                    </group>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="view_order_tree_blanket_extension" model="ir.ui.view">
+            <field name="name" aria-label="Reference">sale.order.tree.blanket.extension</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='amount_total']" position="after">
+                    <field name="origin" optional="hide" string="Source Document"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="view_sales_order_filter_blanket_extension" model="ir.ui.view">
+            <field name="name" aria-label="Reference">sale.order.search.blanket.extension</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="origin" string="Source Document"
+                           filter_domain="[('origin', 'ilike', self)]"/>
+                </xpath>
+
+
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                    <separator/>
+                    <filter string="From Blanket Orders" name="from_blanket_orders"
+                            domain="[('origin', 'ilike', 'BO')]"
+                            help="Sales orders created from blanket orders"/>
+                    <filter string="Direct Sales" name="direct_sales"
+                            domain="[('origin', '=', False)]"
+                            help="Direct sales orders (not from blanket orders)"/>
+                </xpath>
+
+
+                <xpath expr="//filter[@name='salesperson']" position="after">
+                    <filter string="Source Document" name="group_origin"
+                            context="{'group_by': 'origin'}"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="view_order_line_tree_blanket_extension" model="ir.ui.view">
+            <field name="name" aria-label="Reference">sale.order.line.tree.blanket.extension</field>
+            <field name="model">sale.order.line</field>
+            <field name="inherit_id" ref="sale.view_order_line_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='price_subtotal']" position="after">
+                    <field name="blanket_order_line" optional="hide" readonly="1"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="action_orders_from_blanket" model="ir.actions.act_window">
+            <field name="name" aria-label="Reference">Sales from Blanket Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.order</field>
+            <field name="view_mode">tree,form,kanban,graph,pivot</field>
+            <field name="domain">[('origin', 'ilike', 'BO')]</field>
+            <field name="context">{
+                'search_default_from_blanket_orders': 1,
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No sales from blanket orders yet!
+                </p>
+                <p>
+                    This view shows all sale orders that were created from blanket orders.
+                    Use the Blanket Order wizard to create sale orders from your open blanket orders.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_order_lines_from_blanket" model="ir.actions.act_window">
+            <field name="name" aria-label="Reference">Sale Lines from Blanket Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.order.line</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('blanket_order_line', '!=', False)]</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No sale order lines from blanket orders yet!
+                </p>
+                <p>
+                    This view shows all sale order lines that were created from blanket order lines.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_blanket_order_analysis" model="ir.actions.act_window">
+            <field name="name" aria-label="Reference">Blanket Order Analysis</field>
+            <field name="res_model">sale.order</field>
+            <field name="view_mode">graph,pivot</field>
+            <field name="domain">[('origin', 'ilike', 'BO')]</field>
+            <field name="context">{
+                'search_default_from_blanket_orders': 1,
+                'group_by': ['date_order:month', 'team_id'],
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No data to analyze yet!
+                </p>
+                <p>
+                    This analysis shows sales performance from blanket orders.
+                    Create some sale orders from blanket orders to see data here.
+                </p>
+            </field>
+        </record>
+
+        <record id="view_order_kanban_blanket_extension" model="ir.ui.view">
+            <field name="name" aria-label="Reference">sale.order.kanban.blanket.extension</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sale_order_kanban"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//div[@class='oe_kanban_details']" position="inside">
+                    <div invisible="origin == False" class="o_kanban_tags_section">
+                        <span class="o_kanban_tag o_kanban_tag_state_02">
+                            <i class="fa fa-file-text-o"/> <field name="origin"/>
+                        </span>
+                    </div>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="action_blanket_dashboard" model="ir.actions.act_window">
+            <field name="name" aria-label="Reference">Blanket Order Dashboard</field>
+            <field name="res_model">sale.order</field>
+            <field name="view_mode">kanban,graph,pivot</field>
+            <field name="domain">[('origin', 'ilike', 'BO')]</field>
+            <field name="context">{
+                'search_default_this_month': 1,
+                'group_by': ['user_id'],
+            }</field>
+        </record>
+
+
 </odoo>

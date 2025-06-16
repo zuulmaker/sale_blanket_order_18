@@ -159,35 +159,6 @@ self.write({'state': 'confirmed'})
 2. Idempotenz sicherstellen
 3. Status auf "✅ ERLEDIGT" setzen
 
-## Migration Commands
-
-### Vor Migration (Sicherheit)
-```bash
-# Backup erstellen
-pg_dump your_database > backup_17_$(date +%Y%m%d).sql
-
-# Module deaktivieren
-odoo -d your_database -u sale_blanket_order --stop-after-init
-```
-
-### Migration durchführen
-```bash
-# Module installieren
-odoo -d your_database -i sale_blanket_order --stop-after-init
-
-# Module upgraden (idempotent)
-odoo -d your_database -u sale_blanket_order --stop-after-init
-```
-
-### Nach Migration (Validierung)
-```bash
-# Tests ausführen
-odoo -d your_database --test-enable --stop-after-init
-
-# Logs prüfen
-tail -f /var/log/odoo/odoo.log | grep -i blanket
-```
-
 ## Qualitätskontrolle
 
 ### Checkliste pro Datei ✅
@@ -201,20 +172,6 @@ tail -f /var/log/odoo/odoo.log | grep -i blanket
 
 ### Checkliste Gesamt-Migration ✅
 
-- [ ] Alle 7 Phasen abgeschlossen
-- [ ] Migration mindestens 2x getestet
-- [ ] Rollback-Plan erstellt
 - [ ] Dokumentation aktualisiert
 - [ ] Performance validiert
 - [ ] Security Review durchgeführt
-
-## Nächste Schritte
-
-1. **JETZT**: Phase 1 starten mit `__manifest__.py`
-2. **Dann**: Systematisch durch alle Phasen arbeiten
-3. **Schließlich**: Comprehensive Testing
-
----
-
-**Projekt-Status**: 🚀 BEREIT ZUM START  
-**Nächste Aktion**: Erstelle Artefakt für `__manifest__.py`

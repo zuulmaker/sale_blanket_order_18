@@ -10,13 +10,13 @@ from typing import List, Dict, Set, Optional
 
 # Konfiguration - Diese Variablen können angepasst werden
 LICENSE_HEADER = """# -*- coding: utf-8 -*-
-# Copyright {year} {author}
+# Copyright {year} 
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 # Date: {creation_date}
-# Authors: J.s.drees@az-zwick.com & kd.gundermann@az-zwick.com
+# Authors: {author}
 """
 
-AUTHOR = "j.s.drees@az-zwick.com & kd.gundermann@az-zwick.com"
+AUTHOR = "j.s.drees@az-zwick.com"
 CURRENT_YEAR = datetime.now().year
 
 # Dateierweiterungen die einen Header bekommen sollen

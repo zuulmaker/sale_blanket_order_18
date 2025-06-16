@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+# -*- coding: utf-8 -*-
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# Date: 2025-06-02
+# Author: j.s.drees@az-zwick.com
+
+Komplette Menüstruktur für das Blanket Order System.
+
+Anwendungsbeispiele:
+- Hauptmenü für Blanket Orders
+- Untermenüs für verschiedene Views
+- Quick Actions und Shortcuts
+- Integration in Sales Menu
+- Konfiguration und Reports
+-->
+<odoo>
+
+        <menuitem id="menu_sale_blanket_order_root"
+                  name="Blanket Orders"
+                  parent="sale.sale_menu_root"
+                  sequence="25" />
+
+        <menuitem id="menu_sale_blanket_orders"
+                  name="Blanket Orders"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_blanket_orders"
+                  sequence="10"/>
+
+        <menuitem id="menu_sale_blanket_order_lines"
+                  name="Blanket Order Lines"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_blanket_order_lines"
+                  sequence="20"/>
+
+        <!--<menuitem id="menu_sales_from_blanket"
+                  name="Sales from Blanket Orders"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_orders_from_blanket"
+                  sequence="30" active="True"/>
+
+        <menuitem id="menu_blanket_order_reports"
+                  name="Reports"
+                  parent="menu_sale_blanket_order_root"
+                  sequence="90" active="True"/>
+
+        <menuitem id="menu_blanket_order_analysis"
+                  name="Blanket Order Analysis"
+                  parent="menu_blanket_order_reports"
+                  action="action_blanket_order_analysis"
+                  sequence="10" active="True"/>
+
+        <menuitem id="menu_blanket_dashboard"
+                  name="Dashboard"
+                  parent="menu_blanket_order_reports"
+                  action="action_blanket_dashboard"
+                  sequence="20" active="True"/>-->
+
+        <menuitem id="menu_blanket_order_config"
+                  name="Configuration"
+                  parent="menu_sale_blanket_order_root"
+                  groups="sales_team.group_sale_manager"
+                  sequence="99"/>
+
+        <menuitem id="menu_blanket_order_sequences"
+                  name="Sequences"
+                  parent="menu_blanket_order_config"
+                  action="base.action_ir_sequence_forms"
+                  sequence="10"/>
+
+        <record id="action_my_blanket_orders" model="ir.actions.act_window">
+            <field name="name">My Blanket Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('user_id', '=', uid)]</field>
+            <field name="context">{
+                'search_default_open': 1
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create your first blanket order!
+                </p>
+                <p>
+                    This view shows only your blanket orders.
+                    Create blanket orders to manage framework agreements with customers.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_expiring_blanket_orders" model="ir.actions.act_window">
+            <field name="name">Expiring Blanket Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('validity_date', '&lt;=', (context_today() + datetime.timedelta(days=7)).strftime('%Y-%m-%d')), ('state', '=', 'open')]</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No blanket orders expiring soon!
+                </p>
+                <p>
+                    This view shows blanket orders that will expire within the next 7 days.
+                    Contact customers to create remaining sale orders.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_active_blanket_lines" model="ir.actions.act_window">
+            <field name="name">Active Blanket Order Lines</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.line</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('state', '=', 'open'), ('remaining_uom_qty', '>', 0)]</field>
+            <field name="context">{
+                'search_default_group_order': 1,
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No active blanket order lines!
+                </p>
+                <p>
+                    This view shows all active blanket order lines that still have remaining quantities.
+                    Use these to create new sale orders.
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_my_blanket_orders"
+                  name="My Blanket Orders"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_my_blanket_orders"
+                  sequence="15"
+                  groups="sales_team.group_sale_salesman" />
+
+        <menuitem id="menu_expiring_blanket_orders"
+                  name="⚠️ Expiring Soon"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_expiring_blanket_orders"
+                  sequence="25" />
+
+        <menuitem id="menu_active_blanket_lines"
+                  name="Active Lines"
+                  parent="menu_sale_blanket_order_root"
+                  action="action_active_blanket_lines"
+                  sequence="35" />
+
+        <record id="action_blanket_order_wizard_direct" model="ir.actions.act_window">
+            <field name="name" aria-label="Reference">Create Sale Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{}</field>
+        </record>
+
+        <record id="server_action_expire_blanket_orders" model="ir.actions.server">
+            <field name="name">Expire Selected Blanket Orders</field>
+            <field name="model_id" ref="model_sale_blanket_order"/>
+            <field name="binding_model_id" ref="model_sale_blanket_order"/>
+            <field name="state">code</field>
+            <field name="code">
+                for record in records:
+                    if record.state == 'open':
+                        record.state = 'expired'
+                        record.message_post(body="Manually expired via bulk action.")
+            </field>
+        </record>
+
+        <record id="server_action_confirm_blanket_orders" model="ir.actions.server">
+            <field name="name">Confirm Selected Blanket Orders</field>
+            <field name="model_id" ref="model_sale_blanket_order"/>
+            <field name="binding_model_id" ref="model_sale_blanket_order"/>
+            <field name="state">code</field>
+            <field name="code">
+                for record in records:
+                    if record.state == 'draft':
+                        record.action_confirm()
+            </field>
+        </record>
+
+<!--        <menuitem id="menu_crm_blanket_integration"
+                  name="Opportunities → Blanket Orders"
+                  parent="menu_blanket_order_config"
+                  action="base.action_rule_list"
+                  sequence="20"
+                  groups="sales_team.group_sale_manager" active="True"/>-->
+
+        <record id="action_mobile_blanket_quick" model="ir.actions.act_window">
+            <field name="name">Quick Blanket</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.blanket.order</field>
+            <field name="view_mode">kanban,form</field>
+            <field name="domain">[('user_id', '=', uid), ('state', 'in', ['draft', 'open'])]</field>
+            <field name="context">{}</field>
+        </record>
+
+</odoo>
