@@ -22,7 +22,7 @@
         "views/sale_order_views.xml",
         "wizard/create_sale_orders.xml",
         "views/wizard_views.xml",
-        "views/sale_blanket_order_menu.xml"
+        "views/sale_blanket_order_menu.xml",
         "report/sale_blanket_order_templates.xml",
         "report/sale_blanket_order_report.xml",
     ],
