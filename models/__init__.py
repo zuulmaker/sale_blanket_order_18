@@ -11,4 +11,4 @@
 from . import sale_blanket_order
 from . import sale_blanket_order_line
 from . import sale_order
-#from . import res_partner
+from . import sale_config_settings.py

@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
     @api.model
     def _check_exchausted_blanket_order_line(self):
         return any(
-            line.blanket_order_line.remaining_qty < 0.0 for line in self.order_line
+            line.blanket_order_line.remaining_uom_qty < 0.0 for line in self.order_line
         )
 
     def action_confirm(self):

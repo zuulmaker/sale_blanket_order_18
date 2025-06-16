@@ -8,7 +8,7 @@ Sale Blanket Order Line - Standalone Model für Odoo 18.0
 """
 import logging
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError, ValidationError, tax_error
 from odoo.tools import float_is_zero, float_compare, formatLang
 
 _logger = logging.getLogger(__name__)
@@ -204,27 +204,38 @@ class SaleBlanketOrderLine(models.Model):
                 quantity = line.product_uom_qty or 0.0
 
                 # Steuer-Berechnung
-                if line.taxes_id:
-                    taxes = line.taxes_id.compute_all(
-                        price,
-                        line.order_id.currency_id,
-                        quantity,
-                        product=line.product_id,
-                        partner=line.order_id.partner_shipping_id
-                    )
+                if line.taxes_id and line.order_id.currency_id:
+                    try:
 
-                    line.update({
-                        'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
-                        'price_total': taxes.get('total_included', 0.0),
-                        'price_subtotal': taxes.get('total_excluded', 0.0),
-                    })
-                else:
-                    subtotal = price * quantity
-                    line.update({
-                        'price_tax': 0.0,
-                        'price_total': subtotal,
-                        'price_subtotal': subtotal,
-                    })
+                        taxes = line.taxes_id.compute_all(
+                            price,
+                            line.order_id.currency_id,
+                            quantity,
+                            product=line.product_id,
+                            partner=line.order_id.partner_shipping_id
+                        )
+
+                        line.update({
+                            'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
+                            'price_total': taxes.get('total_included', 0.0),
+                            'price_subtotal': taxes.get('total_excluded', 0.0),
+                        })
+                    else:
+                        subtotal = price * quantity
+                        line.update({
+                            'price_tax': 0.0,
+                            'price_total': subtotal,
+                            'price_subtotal': subtotal,
+                        })
+                    except Exception as tax_error:
+                        _logger.warning("Steuerberechnung fehlgeschlagen: %s", tax_error)
+                        # Fallback ohne Steuern
+                        subtotal = price * quantity
+                        line.update({
+                            'price_tax': 0.0,
+                            'price_total': subtotal,
+                            'price_subtotal': subtotal,
+                        })
 
             except Exception as e:
                 _logger.error(

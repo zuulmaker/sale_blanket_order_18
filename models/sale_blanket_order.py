@@ -155,6 +155,13 @@ class SaleBlanketOrder(models.Model):
     )
 
     # Computed Fields - Fehlertolerant
+
+    original_uom_qty = fields.Float(
+    string='Original Quantity',
+    compute='_compute_uom_qty',
+    store=True
+    )
+    
     amount_untaxed = fields.Monetary(
         string='Untaxed Amount',
         store=True,
@@ -286,8 +293,15 @@ class SaleBlanketOrder(models.Model):
             # Pricelist aktualisieren
             if hasattr(self.partner_id, 'property_product_pricelist'):
                 pricelist = self.partner_id.property_product_pricelist
-                if pricelist:
+                if pricelist and pricelist.Active:
                     values['pricelist_id'] = pricelist.id
+                elif not self.pricelist_id:
+                    # Fallback zur Standard-Pricelist
+                    default_pricelist = self.env['product.pricelist'].search([
+                        ('company_id', '=', self.company_id.id)
+                    ], limit=1)
+                    if default_pricelist:
+                        values['pricelist_id'] = default_pricelist.id
 
             # Payment Terms
             if hasattr(self.partner_id, 'property_payment_term_id'):

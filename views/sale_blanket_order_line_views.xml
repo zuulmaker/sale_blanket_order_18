@@ -1,200 +1,217 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 # -*- coding: utf-8 -*-
-# Copyright 2025
+# Copyright 2025 Albrecht Zwick GmbH
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-# Date: 2025-05-30
-# Authors: j.s.drees@az-zwick.com
+# Date: 2025-06-02
+# Author: j.s.drees@az-zwick.com
 
+Sale Blanket Order Line Views - Korrigierte Version für Odoo 18.0
+================================================================
+
+Fehlertoleante und robuste View-Definitionen mit korrekten Feldreferenzen.
+
+Anwendungsbeispiele:
+- Korrekte Feldnamen basierend auf tatsächlichem Model
+- Fehlertoleante UI-Behandlung
+- Robuste Tree/Form Views
+- Konsistente Search Views
 -->
 <odoo>
 
-        <record id="sale_blanket_order_line_tree" model="ir.ui.view">
-            <field name="name">sale.blanket.order.line.tree</field>
-            <field name="model">sale.blanket.order.line</field>
-            <field name="arch" type="xml">
-                <tree create="false" sample="1" multi_edit="1">
-                    <field name="sequence" widget="handle" />
-                    <field name="name" invisible="1" />
-                    <field name="order_id" />
-                    <field
-                        name="product_id"
-                        context="{'partner_id':parent.partner_id, 'quantity':original_uom_qty, 'company_id': company_id}"
-                    />
-                    <field name="product_uom" invisible="1" />
-                    <field name="price_unit" />
-                    <field name="date_schedule" />
-                    <field
-                        name="original_uom_qty"
-                        string="Original Qty"
-                        context="{'partner_id':parent.partner_id, 'quantity':original_uom_qty, 'company_id': company_id}"
-                    />
-                    <field name="ordered_uom_qty" />
-                    <field name="invoiced_uom_qty" />
-                    <field name="delivered_uom_qty" />
-                    <field name="remaining_uom_qty" />
-                    <field name="company_id" invisible="1"  optional="hide"/>
-                </tree>
-            </field>
-        </record>
+    <record id="sale_blanket_order_line_tree" model="ir.ui.view">
+        <field name="name">sale.blanket.order.line.tree</field>
+        <field name="model">sale.blanket.order.line</field>
+        <field name="arch" type="xml">
+            <tree create="false" sample="1" multi_edit="1" 
+                  decoration-warning="remaining_uom_qty &lt;= 0"
+                  decoration-success="remaining_uom_qty &gt; 0">
+                <field name="sequence" widget="handle" />
+                <field name="order_id" />
+                <field name="product_id" 
+                       context="{'partner_id': parent.partner_id, 'quantity': product_uom_qty, 'company_id': company_id}" />
+                <field name="name" invisible="1" />
+                <field name="product_uom" groups="uom.group_uom" optional="hide" />
+                <field name="price_unit" widget="monetary" 
+                       options="{'currency_field': 'currency_id'}" />
+                <field name="date_schedule" optional="show" />
+                
+                <field name="product_uom_qty" string="Original Qty" 
+                       context="{'partner_id': parent.partner_id, 'quantity': product_uom_qty, 'company_id': company_id}" />
+                <field name="ordered_uom_qty" string="Ordered Qty" readonly="1" />
+                <field name="remaining_uom_qty" string="Remaining Qty" readonly="1" 
+                       decoration-warning="remaining_uom_qty &lt;= 0" />
+                <field name="remaining_qty_percent" string="Remaining %" readonly="1" 
+                       widget="percentage" optional="show" />
+                
 
-        <record id="sale_blanket_order_line_form" model="ir.ui.view">
-            <field name="name">sale.blanket.order.line.form</field>
-            <field name="model">sale.blanket.order.line</field>
-            <field name="priority" eval="20" />
-            <field name="arch" type="xml">
-                <form string="Sale Blanket Order Line" duplicate="false" class="o_responsive_form">
-                    <sheet>
-                        <h1>
-                            <field name="order_id" />
-                        </h1>
-                        <group>
-                            <group>
-                                <group>
-                                    <field name="product_id" readonly="1" />
-                                    <field name="price_unit" readonly="1" />
-                                    <field name="partner_id" readonly="1" />
-                                    <field name="date_schedule" readonly="1" />
-                                    <field
-                                        name="company_id"
-                                        groups="base.group_multi_company"
-                                        optional="show"
-                                        options="{'no_create': True}"
-                                    />
-                                </group>
-                            </group>
-                            <group>
-                                <label for="original_uom_qty" />
-                                <div>
-                                    <field
-                                        name="original_uom_qty"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                    <field
-                                        name="product_uom"
-                                        groups="uom.group_uom"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                </div>
-                                <label for="ordered_uom_qty" />
-                                <div>
-                                    <field
-                                        name="ordered_uom_qty"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                    <field
-                                        name="product_uom"
-                                        groups="uom.group_uom"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                </div>
-                                <label for="invoiced_uom_qty" />
-                                <div>
-                                    <field
-                                        name="invoiced_uom_qty"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                    <field
-                                        name="product_uom"
-                                        groups="uom.group_uom"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                </div>
-                                <label for="remaining_uom_qty" />
-                                <div>
-                                    <field
-                                        name="remaining_uom_qty"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                    <field
-                                        name="product_uom"
-                                        groups="uom.group_uom"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                </div>
-                                <label for="remaining_qty" />
-                                <div>
-                                    <field
-                                        name="remaining_qty"
-                                        class="oe_inline"
-                                        readonly="1"
-                                    />
-                                </div>
-                            </group>
-                        </group>
-                        <notebook>
-                            <page name="sale_lines" string="Sale Order Lines">
-                                <field
-                                    name="sale_lines"
-                                    mode="tree"
-                                    readonly="1"
-                                    domain="[('product_id', '=', product_id)]"
-                                />
-                            </page>
-                        </notebook>
-                    </sheet>
-                    <div class="oe_chatter">
-                        <field name="message_follower_ids" widget="mail_followers" />
-                        <field name="activity_ids" widget="mail_activity" />
-                        <field name="message_ids" widget="mail_thread" />
+                <field name="currency_id" invisible="1" />
+                <field name="company_id" invisible="1" optional="hide" />
+                <field name="state" invisible="1" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="sale_blanket_order_line_form" model="ir.ui.view">
+        <field name="name">sale.blanket.order.line.form</field>
+        <field name="model">sale.blanket.order.line</field>
+        <field name="priority" eval="20" />
+        <field name="arch" type="xml">
+            <form string="Sale Blanket Order Line" duplicate="false" class="o_responsive_form">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,expired,done,cancel" />
+                </header>
+                <sheet>
+                    <div class="oe_button_box">
+                        <button type="object" name="action_view_sale_order_lines" 
+                                class="oe_stat_button" icon="fa-list-alt"
+                                invisible="ordered_uom_qty == 0">
+                            <div class="o_stat_info">
+                                <field name="ordered_uom_qty" class="o_stat_value" />
+                                <span class="o_stat_text">Ordered</span>
+                            </div>
+                        </button>
                     </div>
-                </form>
-            </field>
-        </record>
-
-        <record id="view_blanket_order_line_filter" model="ir.ui.view">
-            <field name="name">sale.blanket.order.line.search</field>
-            <field name="model">sale.blanket.order.line</field>
-            <field name="arch" type="xml">
-                <search>
-                    <field name="order_id"/>
-                    <field name="product_id"/>
-                    <field name="partner_id" aria-label="Customer"/>
-
-                    <separator/>
-
-                    <filter string="Has Remaining Qty" name="has_remaining"
-                            domain="[('remaining_uom_qty', '&gt;', 0)]"/>
-                    <filter string="Fully Ordered" name="fully_ordered"
-                            domain="[('remaining_uom_qty', '=', 0)]"/>
-
-                    <group expand="0" string="Group By">
-                        <filter string="Blanket Order" name="group_order"
-                                context="{'group_by': 'order_id'}"/>
-                        <filter string="Product" name="group_product"
-                                context="{'group_by': 'product_id'}"/>
-                        <filter string="Customer" name="group_partner"
-                                context="{'group_by': 'partner_id'}"/>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="order_id" readonly="1" />
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group name="product_info" string="Product Information">
+                            <field name="product_id" readonly="1" />
+                            <field name="name" readonly="1" />
+                            <field name="price_unit" readonly="1" 
+                                   widget="monetary" options="{'currency_field': 'currency_id'}" />
+                            <field name="currency_id" invisible="1" />
+                        </group>
+                        
+                        <group name="order_info" string="Order Information">
+                            <field name="partner_id" readonly="1" />
+                            <field name="date_schedule" readonly="1" />
+                            <field name="company_id" groups="base.group_multi_company" 
+                                   options="{'no_create': True}" readonly="1" />
+                        </group>
                     </group>
-                </search>
-            </field>
-        </record>
+                    
+                    <group name="quantities" string="Quantities">
+                        <group>
+                            <label for="product_uom_qty" />
+                            <div class="o_row">
+                                <field name="product_uom_qty" class="oe_inline" readonly="1" />
+                                <field name="product_uom" groups="uom.group_uom" 
+                                       class="oe_inline" readonly="1" />
+                            </div>
+                            
+                            <label for="ordered_uom_qty" />
+                            <div class="o_row">
+                                <field name="ordered_uom_qty" class="oe_inline" readonly="1" />
+                                <field name="product_uom" groups="uom.group_uom" 
+                                       class="oe_inline" readonly="1" />
+                            </div>
+                        </group>
+                        
+                        <group>
+                            <label for="remaining_uom_qty" />
+                            <div class="o_row">
+                                <field name="remaining_uom_qty" class="oe_inline" readonly="1" 
+                                       decoration-warning="remaining_uom_qty &lt;= 0" />
+                                <field name="product_uom" groups="uom.group_uom" 
+                                       class="oe_inline" readonly="1" />
+                            </div>
+                            
+                            <field name="remaining_qty_percent" readonly="1" 
+                                   widget="percentage" string="Remaining %" />
+                        </group>
+                    </group>
 
-        <record id="action_blanket_order_lines" model="ir.actions.act_window">
-            <field name="name">Blanket Order Lines</field>
-            <field name="res_model">sale.blanket.order.line</field>
-            <field name="view_mode">tree,form</field>
-            <field name="search_view_id" ref="view_blanket_order_line_filter"/>
-            <field name="context">{'search_default_has_remaining': 1}</field>
-        </record>
+                    <group name="pricing" string="Pricing">
+                        <group>
+                            <field name="price_subtotal" readonly="1" 
+                                   widget="monetary" options="{'currency_field': 'currency_id'}" />
+                            <field name="price_tax" readonly="1" 
+                                   widget="monetary" options="{'currency_field': 'currency_id'}" />
+                        </group>
+                        <group>
+                            <field name="price_total" readonly="1" 
+                                   widget="monetary" options="{'currency_field': 'currency_id'}" />
+                        </group>
+                    </group>
 
-        <menuitem
-            action="act_open_sale_blanket_order_lines_view_tree"
-            id="menu_sale_blanket_order_line"
-            groups="sales_team.group_sale_salesman"
-            sequence="21"
-            parent="sale.sale_order_menu" active="True"/>
-        <menuitem id="menu_blanket_order_lines"
-                  name="Blanket Order Lines"
-                  parent="sale.sale_menu_root"
-                  action="action_blanket_order_lines" sequence="10" active="True"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers" />
+                    <field name="activity_ids" widget="mail_activity" />
+                    <field name="message_ids" widget="mail_thread" />
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_blanket_order_line_filter" model="ir.ui.view">
+        <field name="name">sale.blanket.order.line.search</field>
+        <field name="model">sale.blanket.order.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_id" filter_domain="[('order_id', 'ilike', self)]" />
+                <field name="product_id" />
+                <field name="partner_id" />
+                <field name="name" string="Description" filter_domain="[('name', 'ilike', self)]" />
+
+                <separator />
+
+                <filter string="Has Remaining Qty" name="has_remaining"
+                        domain="[('remaining_uom_qty', '&gt;', 0)]" />
+                <filter string="Fully Ordered" name="fully_ordered"
+                        domain="[('remaining_uom_qty', '=', 0)]" />
+                <filter string="Over-ordered" name="over_ordered"
+                        domain="[('remaining_uom_qty', '&lt;', 0)]" />
+
+                <separator />
+
+                <filter string="Active Orders" name="active_orders"
+                        domain="[('state', '=', 'open')]" />
+                <filter string="Draft Orders" name="draft_orders"
+                        domain="[('state', '=', 'draft')]" />
+
+                <group expand="0" string="Group By">
+                    <filter string="Blanket Order" name="group_order"
+                            context="{'group_by': 'order_id'}" />
+                    <filter string="Product" name="group_product"
+                            context="{'group_by': 'product_id'}" />
+                    <filter string="Customer" name="group_partner"
+                            context="{'group_by': 'partner_id'}" />
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_blanket_order_lines" model="ir.actions.act_window">
+        <field name="name">Blanket Order Lines</field>
+        <field name="res_model">sale.blanket.order.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_blanket_order_line_filter" />
+        <field name="context">{'search_default_has_remaining': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No blanket order lines found!
+            </p>
+            <p>
+                Blanket order lines are created automatically when you add products to blanket orders.
+                Create a blanket order to get started.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_blanket_order_lines"
+              name="Blanket Order Lines"
+              parent="sale.sale_menu_root"
+              action="action_blanket_order_lines" 
+              sequence="12" 
+              groups="sales_team.group_sale_salesman" />
 
 </odoo>
